@@ -4,10 +4,21 @@ import pdfParse from "pdf-parse";
 import Tesseract from "tesseract.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
+
+// ===============================
+// CORS — ESSENTIEL POUR GOODBARBER
+// ===============================
+app.use(cors({
+  origin: "https://diasposante.goodbarber.app",
+  methods: ["POST", "GET", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
+}));
+
 app.use(express.json({ limit: "50mb" }));
 
 // ===============================
@@ -83,12 +94,15 @@ ${texte}
 // ===============================
 app.post("/analyse-document", async (req, res) => {
   try {
+    console.log("Requête reçue :", req.body);
+
     const { documentId, cloudinaryUrl, ownerId, patientId, typeDocument } = req.body;
 
     if (!documentId || !cloudinaryUrl) {
       return res.status(400).json({ error: "documentId et cloudinaryUrl obligatoires" });
     }
 
+    // OCR
     let texte = "";
     if (cloudinaryUrl.toLowerCase().endsWith(".pdf")) {
       texte = await ocrPDF(cloudinaryUrl);
@@ -96,8 +110,10 @@ app.post("/analyse-document", async (req, res) => {
       texte = await ocrImage(cloudinaryUrl);
     }
 
+    // Analyse IA
     const analyse = await analyseTexteIA(texte);
 
+    // Préparation payload Baserow
     const payload = {
       TexteExtrait: texte,
       AnalyseIA: JSON.stringify(analyse)
@@ -107,6 +123,7 @@ app.post("/analyse-document", async (req, res) => {
     if (ownerId) payload.Owner = [ownerId];
     if (patientId) payload.Patient = [patientId];
 
+    // Mise à jour Baserow
     await axios.patch(
       `https://api.baserow.io/api/database/rows/table/841992/${documentId}/`,
       payload,
@@ -118,10 +135,12 @@ app.post("/analyse-document", async (req, res) => {
       }
     );
 
+    console.log("Analyse IA enregistrée dans Baserow");
+
     res.json({ success: true, analyse });
 
   } catch (err) {
-    console.error(err);
+    console.error("Erreur analyse :", err);
     res.status(500).json({ error: "Erreur analyse document" });
   }
 });
@@ -130,5 +149,6 @@ app.post("/analyse-document", async (req, res) => {
 // LANCEMENT SERVEUR
 // ===============================
 app.listen(process.env.PORT || 3000, () => {
-  console.log("Backend IA opérationnel");
+  console.log("Backend IA opérationnel sur Render");
 });
+
