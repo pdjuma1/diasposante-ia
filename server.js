@@ -112,16 +112,21 @@ app.post("/analyse-document", async (req, res) => {
     if (patientId) payload.Patient = [patientId];
 
     // Mise à jour Baserow
-    await axios.patch(
-      `https://api.baserow.io/api/database/rows/table/841992/${documentId}/`,
-      payload,
-      {
-        headers: {
-          Authorization: `Token ${BASEROW_TOKEN}`,
-          "Content-Type": "application/json"
-        }
+  try {
+  await axios.patch(
+    `https://api.baserow.io/api/database/rows/table/841992/${documentId}/`,
+    payload,
+    {
+      headers: {
+        Authorization: `Token ${BASEROW_TOKEN}`,
+        "Content-Type": "application/json"
       }
-    );
+    }
+  );
+} catch (err) {
+  console.error("Erreur Baserow :", err.response?.data || err.message);
+}
+
 
     console.log("Analyse enregistrée dans Baserow (avec ou sans IA)");
 
