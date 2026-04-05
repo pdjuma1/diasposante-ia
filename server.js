@@ -73,7 +73,7 @@ ${texte}
       medicaments: [],
       examens: [],
       diagnostic: "",
-      recommandations: [],
+      Recommendations: [],
       alertes: ["Analyse IA indisponible (quota épuisé)"]
     };
   }
@@ -103,13 +103,14 @@ app.post("/analyse-document", async (req, res) => {
 
     // Payload Baserow
     const payload = {
-      TexteExtrait: texte,
-      AnalyseIA: JSON.stringify(analyse)
-    };
+  field_7950031: texte,                     // TexteExtrait
+  field_7950032: JSON.stringify(analyse),   // AnalyseIA
+  field_7651257: typeDocument || ""         // Type du document
+};
 
-    if (typeDocument) payload.TypeDocument = typeDocument;
-    if (ownerId) payload.Owner = [ownerId];
-    if (patientId) payload.Patient = [patientId];
+
+if (typeDocument) payload.field_7651257 = typeDocument;
+
 
     // Mise à jour Baserow
   try {
